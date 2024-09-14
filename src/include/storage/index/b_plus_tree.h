@@ -12,13 +12,13 @@
 
 #include <algorithm>
 #include <deque>
-#include <filesystem>
 #include <iostream>
 #include <optional>
 #include <queue>
 #include <shared_mutex>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include "common/config.h"
 #include "common/macros.h"
@@ -96,7 +96,7 @@ class BPlusTree {
   void Print(BufferPoolManager *bpm);
 
   // Draw the B+ tree
-  void Draw(BufferPoolManager *bpm, const std::filesystem::path &outf);
+  void Draw(BufferPoolManager *bpm, const std::string &outf);
 
   /**
    * @brief draw a B+ tree, below is a printed
@@ -112,21 +112,10 @@ class BPlusTree {
   auto DrawBPlusTree() -> std::string;
 
   // read data from file and insert one by one
-  void InsertFromFile(const std::filesystem::path &file_name, Transaction *txn = nullptr);
+  void InsertFromFile(const std::string &file_name, Transaction *txn = nullptr);
 
   // read data from file and remove one by one
-  void RemoveFromFile(const std::filesystem::path &file_name, Transaction *txn = nullptr);
-
-  /**
-   * @brief Read batch operations from input file, below is a sample file format
-   * insert some keys and delete 8, 9 from the tree with one step.
-   * { i1 i2 i3 i4 i5 i6 i7 i8 i9 i10 i30 d8 d9 } //  batch.txt
-   * B+ Tree(4 max leaf, 4 max internal) after processing:
-   *                            (5)
-   *                 (3)                (7)
-   *            (1,2)    (3,4)    (5,6)    (7,10,30) //  The output tree example
-   */
-  void BatchOpsFromFile(const std::filesystem::path &file_name, Transaction *txn = nullptr);
+  void RemoveFromFile(const std::string &file_name, Transaction *txn = nullptr);
 
  private:
   /* Debug Routines for FREE!! */
@@ -142,6 +131,15 @@ class BPlusTree {
    */
   auto ToPrintableBPlusTree(page_id_t root_id) -> PrintableBPlusTree;
 
+  /* helper function */
+  void InsertInParent(const KeyType &key, WritePageGuard &&new_page_guard, Context &ctx);
+  void PrintPage(WritePageGuard &guard, bool is_leaf_page);
+  void PrintPage(ReadPageGuard &guard, bool is_leaf_page);
+  
+  void DeleteEntry(Context &ctx, KeyType key, ValueType val, std::unordered_map<page_id_t, int> &page_id_to_index);
+  void DeleteInternalEntry(Context &ctx, KeyType key, page_id_t val,
+                           std::unordered_map<page_id_t, int> &page_id_to_index);
+
   // member variable
   std::string index_name_;
   BufferPoolManager *bpm_;
@@ -153,7 +151,7 @@ class BPlusTree {
 };
 
 /**
- * @brief for test only. PrintableBPlusTree is a printable B+ tree.
+ * @brief for test only. PrintableBPlusTree is a printalbe B+ tree.
  * We first convert B+ tree into a printable B+ tree and the print it.
  */
 struct PrintableBPlusTree {
@@ -189,3 +187,4 @@ struct PrintableBPlusTree {
 };
 
 }  // namespace bustub
+
